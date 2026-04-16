@@ -1,0 +1,4 @@
+[project]
+name = "compressify"
+version = "1.0.0"
+description = "CLI tool for compressing pdf files"
