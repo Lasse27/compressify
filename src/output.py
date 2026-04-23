@@ -13,6 +13,7 @@ ENDC: str = "\033[0m"
 BOLD: str = "\033[1m"
 UNDERLINE: str = "\033[4m"
 
+
 class Console:
     _scopes: list[str] = list()
     _scopes_char_len: int = 0
@@ -39,7 +40,7 @@ class Console:
 
     # Enable or disable colors in the console output
     def toggle_colorized(self, toggle: bool):
-       self. _show_colorized = toggle
+        self._show_colorized = toggle
 
     # Logs a string with the current configuration into the output console as raw text.
     def log_raw(self, message: str):
@@ -47,7 +48,7 @@ class Console:
             return
 
         print(LEVEL_CHAR_LEN * " ", end=" ")
-        if (self._scopes_char_len > 0):
+        if self._scopes_char_len > 0:
             print(self._scopes_char_len * " ", end=" ")
 
         print(message)
@@ -91,3 +92,23 @@ class Console:
             print(ENDC, end="")
 
         print(message)
+
+    def simple_prompt(self, prompt: str) -> bool:
+
+        print(LEVEL_CHAR_LEN * " ", end=" ")
+        if self._scopes_char_len > 0:
+            print(self._scopes_char_len * " ", end=" ")
+
+        print(f"> {prompt} [y, N]")
+
+        print(LEVEL_CHAR_LEN * " ", end=" ")
+        if self._scopes_char_len > 0:
+            print(self._scopes_char_len * " ", end=" ")
+
+        try:
+            key = input("> ")
+            if key != "y" and key != "Y":
+                return True
+            return False
+        except KeyboardInterrupt:
+            exit(-1)
