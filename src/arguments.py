@@ -19,7 +19,7 @@ def get_arguments() -> args.Namespace:
         type=str, 
         metavar="Path",
         dest="destination",
-        help="optional destination path of the compressed file or files.")
+        help="optional destination path of the compressed file or files")
 
     parser.add_argument(
         "-r",
@@ -50,6 +50,16 @@ def get_arguments() -> args.Namespace:
     )
     
     parser.add_argument(
+        "-w",
+        "--imagew",
+        dest="image_max_width",
+        default=1500,
+        type=int,
+        metavar="INT",
+        help="maximum width of images in target files",
+    )
+    
+    parser.add_argument(
         "-c", "--clear-images",
         action="store_true",
         dest="clear_images",
@@ -58,10 +68,12 @@ def get_arguments() -> args.Namespace:
 
     parser.add_argument(
         "-v",
-        "--verbose",
-        action="store_true",
-        dest="verbose",
-        help="enable verbose output in the console",
+        "--verbosity",
+        dest="verbosity",
+        type=int,
+        default=0,
+        metavar="0-5",
+        help="specify how verbose the output in the console should be.",
     )
 
     parser.add_argument(
@@ -70,14 +82,6 @@ def get_arguments() -> args.Namespace:
         action="store_true",
         dest="timestamps",
         help="enable timestamps in verbose console output",
-    )
-
-    parser.add_argument(
-        "-n",
-        "--no-color",
-        action="store_true",
-        dest="no_color",
-        help="enable colorized text in verbose console output",
     )
 
     return parser.parse_args()
