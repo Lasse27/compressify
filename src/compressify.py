@@ -97,7 +97,7 @@ def handle_file_compression(arguments: Namespace, source_path: Path, target_path
     
     if (source_path.stat().st_size / 1024 < arguments.sizekB):
         shutil.copyfile(source_path, target_path)
-        LOGGER.warning(f"Source file below required file size. Using original file: '{source_path}'.")
+        LOGGER.warning(f"Source file below required file size. Copying original file: '{source_path}'.")
         return
 
     # Remove images
@@ -127,7 +127,7 @@ def handle_file_compression(arguments: Namespace, source_path: Path, target_path
     # Replace with original if file size is bigger
     if target_path.stat().st_size > source_path.stat().st_size:
         shutil.copyfile(source_path, target_path)
-        LOGGER.warning(f"Compressed file was bigger than original file. Using original file: '{source_path}'.")
+        LOGGER.warning(f"Compressed file was bigger than original file. Copying original file: '{source_path}'.")
 
     global compressed_amount
     compressed_amount += 1
