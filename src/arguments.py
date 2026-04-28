@@ -35,27 +35,37 @@ def get_arguments() -> args.Namespace:
         dest="level",
         default=9,
         type=int,
-        metavar="0-9",
+        metavar="0-9 [9]",
         help="specify the level of compression applied to targeted files",
+    )
+
+    parser.add_argument(
+        "-s",
+        "--sizekB",
+        dest="sizekB",
+        default=250,
+        type=int,
+        metavar="[250]",
+        help="pdf documents with less file size (kB) than this will be skipped while compressing",
     )
 
     parser.add_argument(
         "-i",
         "--imagec",
-        dest="image_compression",
-        default=100,
+        dest="image_count",
+        default=25,
         type=int,
-        metavar="0-100",
-        help="percentual compression of images in targeted files",
+        metavar="[25]",
+        help="pdf pages which have more images than this will be skipped while compressing",
     )
     
     parser.add_argument(
         "-w",
         "--imagew",
         dest="image_max_width",
-        default=1500,
+        default=1280,
         type=int,
-        metavar="INT",
+        metavar="[1280]",
         help="maximum width of images in target files",
     )
     
@@ -70,7 +80,7 @@ def get_arguments() -> args.Namespace:
         "-v",
         "--verbosity",
         dest="verbosity",
-        type=int,
+        type=str,
         default=0,
         metavar="0-5",
         help="specify how verbose the output in the console should be.",

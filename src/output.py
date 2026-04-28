@@ -43,27 +43,28 @@ def init_logger(arguments: Namespace) -> logging.Logger:
     
     # Handle level of logger
     logger = logging.getLogger("compressify")
-    match(arguments.verbosity):
-        case 0:
-            logger.setLevel(logging.CRITICAL)
-        case 1:
-            logger.setLevel(logging.ERROR)
-        case 2:
-            logger.setLevel(logging.WARN)
-        case 3:
-            logger.setLevel(logging.INFO)
-        case 4:
-            logger.setLevel(logging.DEBUG)
-        case _:
-            logger.disabled = True
-    
+        
     # Create formatter
     handler = logging.StreamHandler()
     formatter = CustomFormatter()
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     
+    match(arguments.verbosity):
+        case "critical":
+            logger.setLevel(logging.CRITICAL)
+        case "error":
+            logger.setLevel(logging.ERROR)
+        case "warning":
+            logger.setLevel(logging.WARNING)
+        case "info":
+            logger.setLevel(logging.INFO)
+        case "debug":
+            logger.setLevel(logging.DEBUG)
+        case "silent":
+            logger.disabled = True
+        case _:
+            logger.setLevel(logging.WARNING)
+            logger.warning(f"Unknown verbosity: '{arguments.verbosity}'.")
+    
     return logger
-
-def printSectionHeader(message: str):
-    print(f">> {BOLD_CYAN}{message}{RESET}")

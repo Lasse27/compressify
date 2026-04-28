@@ -1,7 +1,7 @@
 from pathlib import Path
 import arguments as args
 from argparse import Namespace
-from pypdf import PdfWriter
+from pypdf import PageObject, PdfWriter
 import shutil
 from PIL import Image
 import output
@@ -11,6 +11,7 @@ import time
 LOGGER = logging.getLogger(__name__)
 compressed_amount: int = 0
 start_time = time.time_ns()
+
 
 def main() -> None:
     try:
@@ -38,9 +39,9 @@ def main() -> None:
 
         if source_path.is_file():
             handle_file_compression(arguments, source_path, destination_path)
-        
-        process_time = (time.time_ns() - start_time) / 1000. / 1000. / 1000.
-        LOGGER.info(f"Compressed {compressed_amount} pdf file in {process_time:.3f} s.")
+
+        process_time = (time.time_ns() - start_time) / 1000.0 / 1000.0 / 1000.0
+        LOGGER.info(f"Compressed {compressed_amount} pdf file/s in {process_time:.3f} s.")
 
     except KeyboardInterrupt:
         LOGGER.warning("Interrupted by user. Exiting program.")
@@ -76,10 +77,11 @@ def handle_dir_compression(arguments: Namespace, source_path: Path, target_path:
 
     # Compressing all collected files
     LOGGER.info(f"Compressing {paths_count} files... (this may take a while)")
-    for file_path in paths:
+    for i in range(paths_count):
+        file_path = paths[i]
         gen_target_path = target_path.joinpath(file_path.with_name(file_path.stem + "-compressed" + file_path.suffix).name)
+        LOGGER.info(f"({i+1}/{paths_count}) Compressing {file_path}...")
         handle_file_compression(arguments, file_path.absolute(), gen_target_path)
-        
     return
 
 
@@ -92,19 +94,31 @@ def handle_file_compression(arguments: Namespace, source_path: Path, target_path
     if target_path.is_dir():
         LOGGER.warning("Target path can't be directory path when compressing file.")
         return
+    
+    if (source_path.stat().st_size / 1024 < arguments.sizekB):
+        shutil.copyfile(source_path, target_path)
+        LOGGER.warning(f"Source file below required file size. Using original file: '{source_path}'.")
+        return
 
+    # Remove images
     writer: PdfWriter = PdfWriter(clone_from=source_path)
     if arguments.clear_images:
         writer.remove_images()
 
-    # Lossless compression
+    # Compress identical objects
+    writer.compress_identical_objects(remove_duplicates=True, remove_unreferenced=True)
     for page in writer.pages:
         if arguments.level > 0:
             page.compress_content_streams(level=arguments.level)
-
+            
+    with open(target_path, "wb") as target:
+        writer.write(target)
+        
+    # Compress images after dupliates have been removed
+    writer: PdfWriter = PdfWriter(clone_from=target_path)
+    for page in writer.pages:
         handle_image_compression(arguments, page)
 
-    writer.compress_identical_objects(remove_duplicates=True, remove_unreferenced=True)
     with open(target_path, "wb") as target:
         writer.write(target)
 
@@ -114,24 +128,33 @@ def handle_file_compression(arguments: Namespace, source_path: Path, target_path
     if target_path.stat().st_size > source_path.stat().st_size:
         shutil.copyfile(source_path, target_path)
         LOGGER.warning(f"Compressed file was bigger than original file. Using original file: '{source_path}'.")
-        
+
     global compressed_amount
     compressed_amount += 1
 
 
 def handle_image_compression(arguments: Namespace, page):
-    for img in page.images:
-        try:
+    try:
+        if (len(page.images) > arguments.image_count):
+            return
+        
+        relevant_images = [x for x in page.images if x.image.width > arguments.image_max_width]
+        if (len(relevant_images) == 0):
+            return
+        
+        i: int = 1
+        LOGGER.debug(f"- Relevant images: {len(relevant_images)}")
+        for img in relevant_images:
+            LOGGER.debug(f"- - Image {i}/{len(relevant_images)}")
             pil_img = img.image
-            if pil_img.width > arguments.image_max_width:
-                ratio = arguments.image_max_width / pil_img.width
-                new_size = (arguments.image_max_width, int(pil_img.height * ratio))
-                pil_img = pil_img.resize(new_size, Image.Resampling.LANCZOS)
+            ratio = arguments.image_max_width / pil_img.width
+            new_size = (arguments.image_max_width, int(pil_img.height * ratio))
+            pil_img = pil_img.resize(new_size, Image.Resampling.LANCZOS)
+            img.replace(pil_img)
+            i += 1
 
-            img.replace(pil_img, quality=arguments.image_compression)
-
-        except Exception as ex:
-            LOGGER.debug(f"Image compression failed: {ex}")
+    except Exception as ex:
+        LOGGER.warning(f"Image compression failed: {ex}")
 
 
 if __name__ == "__main__":
